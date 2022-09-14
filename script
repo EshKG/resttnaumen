@@ -1,0 +1,31 @@
+#!/bin/bash
+
+address="https://yoursite.nau.team:8443" #YOUR NAUMEN HOST
+login="wsrest"
+pass="pass"
+http () {
+http_response=$(curl -X PUT -H "Content-Type: application/json" -w "%{http_code}" --user login:pass --data "{\"state\": \"new\"}" $address/api/v2/cases/$1/state)
+if [ $http_response -eq "200" ];then
+logger -p local7.info "Обновлен кейс $1 (Магазин $2).Код $http_response"
+echo Обновлен кейс
+else
+logger -p local7.err "Ошибка обновления кейса $1 (Магазин $2).Код ошибки $http_response"
+echo "Не обновлен"
+fi
+}
+#13
+http	ocpcas00000000000o639gf40je8h6c8	"Комментарий кейса" #Func http that accepts two arguments the uuid and comment of case
+
+#func for logging errors after starting to update the case status
+resultcode () {
+if [ $1 -eq "200" ]; then
+logger -p local7.info "Операция $2 выполнена успешна"
+else
+logger -p local7.err "$1"
+fi
+}
+
+http_run=$(curl -X POST -H "Content-Type: application/json" -w "%{http_code}" --user $login:$pass --data "{\"cmd\": \"start\"}" $address/api/v2/projects/INPUT_HERE_PROJECT_UUID/calllist)
+resultcode $http_run "запуск обзвона"
+http_update=$(curl -X POST -H "Content-Type: application/json" -w "%{http_code}" --user $login:$pass --data "{\"cmd\": \"update\"}" $address/api/v2/projects/INPUT_HERE_PROJECT_UUID/calllist)
+resultcode $http_update "обновления списка контактов"
